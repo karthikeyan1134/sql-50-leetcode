@@ -179,6 +179,23 @@ GROUP BY a.machine_id;
 | 1          | 0          | 0.55       | 1.55     | 0.9949999451637268 |
 | 2          | 0          | 4.1        | 4.512    | 1.4560000896453857 |
 
+### final output
+```
+SELECT a.machine_id,
+       ROUND(AVG(b.timestamp-a.timestamp),3) as processing_time 
+FROM Activity a 
+    JOIN Activity b 
+    ON a.machine_id=b.machine_id 
+        AND a.process_id = b.process_id
+WHERE a.activity_type = 'start' AND b.activity_type='end'
+GROUP BY a.machine_id;
+```
+
+| machine_id | processing_time |
+| ---------- | --------------- |
+| 0          | 0.894           |
+| 1          | 0.995           |
+| 2          | 1.456           |
 
 [577 - Employee Bonus](https://leetcode.com/problems/employee-bonus/solutions/)
 ```sql
