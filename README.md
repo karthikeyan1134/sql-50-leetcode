@@ -267,14 +267,38 @@ ORDER BY rating DESC
 [1251. Average Selling Price](https://leetcode.com/problems/average-selling-price/)
 ```sql
 -- avg(selling), round 2
-SELECT p.product_id, 
-  ROUND(SUM(price * units) / SUM(units), 2) AS average_price
+SELECT 
+  p.product_id,
+  COALESCE(
+    ROUND(SUM(u.units * p.price) / NULLIF(SUM(u.units), 0), 2),
+    0
+  ) AS average_price
 FROM Prices p
-LEFT JOIN UnitsSold s
-ON p.product_id = s.product_id
-AND purchase_date BETWEEN start_date AND end_date
-GROUP BY p.product_id
+LEFT JOIN UnitsSold u
+  ON p.product_id = u.product_id
+ AND u.purchase_date BETWEEN p.start_date AND p.end_date
+GROUP BY p.product_id;
 ```
+✅ Why This Works
+- SUM(u.units) will be NULL when there are no matches → COALESCE(..., 0) converts it to 0.
+- NULLIF(SUM(u.units), 0) prevents division by 0.
+- If there are no matching units sold, the entire expression becomes NULL → COALESCE(..., 0) gives 0.
+
+Prices =
+| product_id | start_date | end_date   | price |
+| ---------- | ---------- | ---------- | ----- |
+| 1          | 2023-01-01 | 2023-01-31 | 10    |
+| 2          | 2023-01-01 | 2023-01-31 | 20    |
+
+UnitsSold =
+| product_id | purchase_date | units |
+| ---------- | ------------- | ----- |
+
+Output
+| product_id | average_price |
+| ---------- | ------------- |
+| 1          | 0             |
+| 2          | 0             |
 
 [1075. Project Employees I](https://leetcode.com/problems/project-employees-i)
 ```sql
