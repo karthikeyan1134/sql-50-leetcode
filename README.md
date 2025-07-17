@@ -41,6 +41,12 @@ SELECT tweet_id
 FROM Tweets
 WHERE length(content) > 15
 ```
+Using CHAR_LENGTH
+```sql
+SELECT tweet_id
+FROM Tweets
+WHERE CHAR_LENGTH(content) > 15;
+```
 
 [1378 - Replace Employee ID With The Unique Identifier](https://leetcode.com/problems/replace-employee-id-with-the-unique-identifier)
 ```sql
@@ -56,6 +62,12 @@ SELECT product_name, year, price
 FROM Sales s
 LEFT JOIN Product p
 ON s.product_id = p.product_id
+
+Optimized
+
+SELECT p.product_name, s.year, s.price
+FROM Sales s
+JOIN Product p ON s.product_id = p.product_id;
 ```
 
 [1581 - Customer Who Visited but Did Not Make Any Transactions](https://leetcode.com/problems/customer-who-visited-but-did-not-make-any-transactions/)
@@ -64,6 +76,22 @@ SELECT customer_id, COUNT(*) as count_no_trans
 FROM Visits 
 WHERE visit_id NOT IN (SELECT DISTINCT visit_id FROM Transactions)
 GROUP BY customer_id
+
+SELECT customer_id, count(*) as count_no_trans
+FROM Visits v 
+LEFT JOIN Transactions t
+    ON v.visit_id = t.visit_id
+WHERE t.visit_id IS NULL
+GROUP BY v.customer_id;
+
+SELECT customer_id, COUNT(*) AS count_no_trans
+FROM Visits v
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Transactions t
+    WHERE t.visit_id = v.visit_id
+)
+GROUP BY customer_id;
 ```
 
 [197 - Rising Temperature](https://leetcode.com/problems/rising-temperature/) 
@@ -78,6 +106,22 @@ SELECT w1.id
 FROM Weather w1, Weather w2
 WHERE w1.temperature > w2.temperature
 AND SUBDATE(w1.recordDate, 1) = w2.recordDate
+
+--OR
+SELECT id 
+FROM Weather a
+WHERE EXISTS (
+        SELECT 1 FROM Weather b
+        Where DATEDIFF(a.recordDate,b.recordDate) = 1
+        AND a.temperature > b.temperature
+    )
+
+--OR efficient
+SELECT a.id
+FROM Weather a
+JOIN Weather b
+  ON a.recordDate = DATE_ADD(b.recordDate, INTERVAL 1 DAY)
+WHERE a.temperature > b.temperature;
 ```
 
 [1661 - Average Time of Process per Machine](https://leetcode.com/problems/average-time-of-process-per-machine/)
@@ -91,6 +135,50 @@ FROM
   GROUP BY machine_id, process_id) AS subq
 GROUP BY machine_id
 ```
+
+Understanding the logic
+```sql
+SELECT a.machine_id , a.process_id , 
+       a.timestamp AS start_time,
+       b.timestamp AS end_time, 
+       b.timestamp-a.timestamp as diff
+FROM Activity a 
+    JOIN Activity b 
+    ON a.machine_id=b.machine_id 
+        AND a.process_id = b.process_id
+WHERE a.activity_type = 'start' AND b.activity_type='end';
+```
+#### Output:
+| machine_id | process_id | start_time | end_time | diff               |
+| ---------- | ---------- | ---------- | -------- | ------------------ |
+| 0          | 0          | 0.712      | 1.52     | 0.8079999685287476 |
+| 0          | 1          | 3.14       | 4.12     | 0.9799997806549072 |
+| 1          | 0          | 0.55       | 1.55     | 0.9999999403953552 |
+| 1          | 1          | 0.43       | 1.42     | 0.9899999499320984 |
+| 2          | 0          | 4.1        | 4.512    | 0.4120001792907715 |
+| 2          | 1          | 2.5        | 5        | 2.5                |
+
+#### And when we add groupby machine_id we use Aggration AVG
+
+```sql
+SELECT a.machine_id , a.process_id , 
+       a.timestamp AS start_time,
+       b.timestamp AS end_time, 
+       AVG(b.timestamp-a.timestamp) as diff
+FROM Activity a 
+    JOIN Activity b 
+    ON a.machine_id=b.machine_id 
+        AND a.process_id = b.process_id
+WHERE a.activity_type = 'start' AND b.activity_type='end'
+GROUP BY a.machine_id;
+```
+#### output:
+| machine_id | process_id | start_time | end_time | diff               |
+| ---------- | ---------- | ---------- | -------- | ------------------ |
+| 0          | 0          | 0.712      | 1.52     | 0.8939998745918274 |
+| 1          | 0          | 0.55       | 1.55     | 0.9949999451637268 |
+| 2          | 0          | 4.1        | 4.512    | 1.4560000896453857 |
+
 
 [577 - Employee Bonus](https://leetcode.com/problems/employee-bonus/solutions/)
 ```sql
